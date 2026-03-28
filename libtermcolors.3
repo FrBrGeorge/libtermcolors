@@ -1,0 +1,105 @@
+.TH libtermcolors 3 "2026-03-28" "libtermcolors 1.0.0" "Library Functions Manual"
+.SH NAME
+colorscheme, color_sequence, unquote_escapes, ansi_color \- terminal colorization scheme handling
+.SH SYNOPSIS
+.nf
+.B #include <termcolors.h>
+.sp
+.BI "int colorscheme(char *" name ", char *" term ", char **" filename ");"
+.sp
+.BI "int color_sequence(const char *" filename ", const char *" name ", char **" sequence ");"
+.sp
+.BI "char *unquote_escapes(const char *" sequence ");"
+.sp
+.BI "int ansi_color(const char *" filename ", const char *" name ", char **" sequence ");"
+.fi
+.SH DESCRIPTION
+The
+.BR colorscheme ()
+function detects which file must be used as a colorization scheme according to the
+.BR terminal-colors.d (5)
+specification.
+.PP
+The
+.BR color_sequence ()
+function finds a logical color name in a colorscheme file and returns its raw sequence.
+.PP
+The
+.BR unquote_escapes ()
+function translates escape sequences in a string according to
+.BR terminal-colors.d (5).
+Supported sequences: \a, \b, \e, \f, \n, \r, \t, \v, \\, \_.
+.PP
+The
+.BR ansi_color ()
+function works like
+.BR color_sequence (),
+but also:
+.IP \(bu
+If a raw escape is detected (starts with \), calls
+.BR unquote_escapes ().
+.IP \(bu
+If an ANSI color sequence is detected (numbers and semicolons), encloses it with \033[ and m.
+.IP \(bu
+If a color name is detected, replaces it with an appropriate escape sequence.
+.PP
+Supported color names: black, blue, brown, cyan, darkgray, gray, green, 
+lightblue, lightcyan, lightgray, lightgreen, lightmagenta, lightred, 
+magenta, red, white, yellow.
+.PP
+Supported attribute names: blink, bold, halfbright, reset, reverse.
+.SH RETURN VALUE
+On success,
+.BR colorscheme (),
+.BR color_sequence (),
+and
+.BR ansi_color ()
+return
+.B TERMCOLORS_SUCCESS
+(0).
+.PP
+.BR unquote_escapes ()
+returns an allocated string on success, or NULL on error.
+.SH ENVIRONMENT
+.TP
+.B NO_COLOR
+If set to any value, colorization is disabled. This variable has the highest priority.
+.SH FILES
+The function searches for configuration files in the following directories (in order of priority):
+.IP 1.
+.I $XDG_CONFIG_HOME/terminal-colors.d
+(or
+.I $HOME/.config/terminal-colors.d
+if
+.I $XDG_CONFIG_HOME
+is not set)
+.IP 2.
+.I SYSCONFDIR/terminal-colors.d
+(where
+.I SYSCONFDIR
+is determined at build time, typically
+.IR /etc ).
+.PP
+Within each directory, the following files are searched (first match wins):
+.IP 1.
+.I name@term.enable
+.IP 2.
+.I name@term.disable
+.IP 3.
+.I name@term.scheme
+.IP 4.
+.I name.enable
+.IP 5.
+.I name.disable
+.IP 6.
+.I name.scheme
+.IP 7.
+.I @term.enable
+.IP 8.
+.I @term.disable
+.IP 9.
+.I @term.scheme
+.IP 10.
+.I disable
+.SH SEE ALSO
+.BR terminal-colors.d (5)
