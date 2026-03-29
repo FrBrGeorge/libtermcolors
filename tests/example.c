@@ -5,8 +5,9 @@
 
 int main() {
     char *filename = NULL;
-    // We use "mytool" as utility name and "xterm" as terminal name for this example.
-    int res = colorscheme("mytool", "xterm", &filename);
+    char *term = getenv("TERM");
+    // We use "mytool" as utility name and the current TERM for this example.
+    int res = colorscheme("mytool", term, &filename);
     
     if (res == TERMCOLORS_DISABLED) {
         printf("Coloring is disabled.\n");

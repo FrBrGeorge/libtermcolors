@@ -14,7 +14,8 @@ Short snippet:
 
 int main() {
     char *filename = NULL;
-    int res = colorscheme("mytool", "xterm", &filename);
+    char *term = getenv("TERM");
+    int res = colorscheme("mytool", term, &filename);
     
     if (res == TERMCOLORS_SUCCESS && filename) {
         char *seq = NULL;
@@ -40,6 +41,21 @@ int main() {
     
     return 0;
 }
+```
+
+### Running the Example Manually
+
+The test suite creates a persistent colorscheme in `tests/config/terminal-colors.d/mytool.scheme`. You can run the example manually by pointing `XDG_CONFIG_HOME` to the `tests/config` directory:
+
+```bash
+cd tests
+XDG_CONFIG_HOME=$(pwd)/config ./example
+```
+
+You can also enable debug messages to see the discovery process:
+
+```bash
+TERMINAL_COLORS_DEBUG=all XDG_CONFIG_HOME=$(pwd)/config ./example
 ```
 
 ## Build and Install

@@ -554,7 +554,26 @@ example_SOURCES = example.c
 example_LDADD = $(top_builddir)/src/libtermcolors.la
 example_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
 
-TESTS = test_termcolors example`;
+TESTS = test_termcolors example
+
+# Create a persistent colorscheme for the example test
+CONFIG_DIR = $(abs_builddir)/config
+SCHEME_DIR = $(CONFIG_DIR)/terminal-colors.d
+SCHEME_FILE = $(SCHEME_DIR)/mytool.scheme
+
+$(SCHEME_FILE):
+	$(MKDIR_P) $(SCHEME_DIR)
+	echo "header blue" > $@
+	echo "error red" >> $@
+
+# Ensure the scheme file is created before running tests
+check-local: $(SCHEME_FILE)
+
+# Set XDG_CONFIG_HOME for the example test
+TESTS_ENVIRONMENT = XDG_CONFIG_HOME=$(CONFIG_DIR)
+
+clean-local:
+	rm -rf $(CONFIG_DIR)`;
 
 const SRC_MAKEFILE_AM = `lib_LTLIBRARIES = libtermcolors.la
 libtermcolors_la_SOURCES = termcolors.c
@@ -691,6 +710,9 @@ A library for terminal colorization scheme handling according to the \`terminal-
 
 ## Usage Example
 
+See \`tests/example.c\` for a complete, compilable example with error handling.
+
+Short snippet:
 \`\`\`c
 #include <termcolors.h>
 #include <stdio.h>
@@ -698,7 +720,8 @@ A library for terminal colorization scheme handling according to the \`terminal-
 
 int main() {
     char *filename = NULL;
-    int res = colorscheme("mytool", "xterm", &filename);
+    char *term = getenv("TERM");
+    int res = colorscheme("mytool", term, &filename);
     
     if (res == TERMCOLORS_SUCCESS && filename) {
         char *seq = NULL;
@@ -714,6 +737,21 @@ int main() {
     
     return 0;
 }
+\`\`\`
+
+### Running the Example Manually
+
+The test suite creates a persistent colorscheme in \`tests/config/terminal-colors.d/mytool.scheme\`. You can run the example manually by pointing \`XDG_CONFIG_HOME\` to the \`tests/config\` directory:
+
+\`\`\`bash
+cd tests
+XDG_CONFIG_HOME=\$(pwd)/config ./example
+\`\`\`
+
+You can also enable debug messages to see the discovery process:
+
+\`\`\`bash
+TERMINAL_COLORS_DEBUG=all XDG_CONFIG_HOME=\$(pwd)/config ./example
 \`\`\`
 
 ## Build and Install
@@ -806,7 +844,8 @@ export default function App() {
 
 int main() {
     char *filename = NULL;
-    int res = colorscheme("mytool", "xterm", &filename);
+    char *term = getenv("TERM");
+    int res = colorscheme("mytool", term, &filename);
     
     if (res == TERMCOLORS_SUCCESS && filename) {
         char *seq = NULL;
