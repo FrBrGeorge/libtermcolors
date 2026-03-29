@@ -7,9 +7,10 @@
 #include <assert.h>
 #include <errno.h>
 
-static char tmp_dir[] = "/tmp/termcolors_test_XXXXXX";
+static char tmp_dir[1024];
 
 static void setup_test_dir() {
+    strcpy(tmp_dir, "/tmp/termcolors_test_XXXXXX");
     if (mkdtemp(tmp_dir) == NULL) {
         perror("mkdtemp");
         exit(1);
@@ -266,8 +267,8 @@ static void test_unquote_escapes() {
     printf("unquote_escapes tests passed!\n");
 }
 
-static void test_ansi_color() {
-    printf("Testing ansi_color...\n");
+static void test_get_color() {
+    printf("Testing get_color and ansi_color macro...\n");
 
     const char *scheme_file = "test_ansi.scheme";
     FILE *f = fopen(scheme_file, "w");
@@ -284,56 +285,75 @@ static void test_ansi_color() {
     char *seq = NULL;
     int res;
 
-    // Test 1: ANSI sequence
-    res = ansi_color(scheme_file, "header", &seq);
+    // Test 1: get_color with ansi_sequence
+    res = get_color(scheme_file, "header", ansi_sequence, &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;34m") == 0);
     free(seq);
 
-    // Test 2: Color name
+    // Test 2: ansi_color macro
     res = ansi_color(scheme_file, "error", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[31m") == 0);
     free(seq);
 
-    // Test 3: Attribute name
+    // Test 3: Attribute name via macro
     res = ansi_color(scheme_file, "bold_attr", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1m") == 0);
     free(seq);
 
-    // Test 4: Bright color name
+    // Test 4: Bright color name via macro
     res = ansi_color(scheme_file, "bright_err", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;31m") == 0);
     free(seq);
 
-    // Test 5: Brown color
+    // Test 5: Brown color via macro
     res = ansi_color(scheme_file, "brown_color", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[33m") == 0);
     free(seq);
 
-    // Test 6: White color
+    // Test 6: White color via macro
     res = ansi_color(scheme_file, "white_color", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;37m") == 0);
     free(seq);
 
-    // Test 7: Raw escape
+    // Test 7: Raw escape via macro
     res = ansi_color(scheme_file, "raw_esc", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;35m") == 0);
     free(seq);
 
-    // Test 8: Plain text treated as raw escape (unquoted)
+    // Test 8: Plain text treated as raw escape via macro
     res = ansi_color(scheme_file, "plain_text", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "some_text") == 0);
     free(seq);
 
     unlink(scheme_file);
-    printf("ansi_color tests passed!\n");
+    printf("get_color and ansi_color tests passed!\n");
+}
+
+static void test_ansi_sequence() {
+    char *seq = NULL;
+    
+    // Test color name
+    assert(ansi_sequence("red", &seq) == TERMCOLORS_SUCCESS);
+    assert(strcmp(seq, "\033[31m") == 0);
+    free(seq);
+    
+    // Test ANSI sequence
+    assert(ansi_sequence("1;32", &seq) == TERMCOLORS_SUCCESS);
+    assert(strcmp(seq, "\033[1;32m") == 0);
+    free(seq);
+    
+    // Test raw escape
+    assert(ansi_sequence("\\e[34m", &seq) == TERMCOLORS_SUCCESS);
+    assert(strcmp(seq, "\033[34m") == 0);
+    free(seq);
 }
 
 int main() {
@@ -367,7 +387,8 @@ int main() {
     test_enable_files();
     test_color_sequence();
     test_unquote_escapes();
-    test_ansi_color();
+    test_get_color();
+    test_ansi_sequence();
 
     cleanup_test_dir();
     printf("All tests passed!\n");

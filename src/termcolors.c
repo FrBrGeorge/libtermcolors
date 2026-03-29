@@ -305,24 +305,21 @@ static int is_ansi_sequence(const char *s) {
 }
 
 /**
- * Finds a logical color name in a colorscheme file and returns its ANSI escape sequence.
+ * Converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
  * 
- * @param filename Path to the colorscheme file
- * @param name     Logical color name (e.g., "header")
+ * @param raw      Raw color string
  * @param sequence Output pointer for the allocated sequence string
- * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND if file not found, TERMCOLORS_UNKNOWN_COLOR if color not defined.
+ * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND on error.
  */
-int ansi_color(const char *filename, const char *name, char **sequence) {
-    char *raw = NULL;
-    int res = color_sequence(filename, name, &raw);
-    if (res != TERMCOLORS_SUCCESS) return res;
+int ansi_sequence(const char *raw, char **sequence) {
+    if (!raw || !sequence) return TERMCOLORS_NOT_FOUND;
+    *sequence = NULL;
 
     const char *code = get_color_code(raw);
     if (code) {
         size_t len = strlen(code) + 5; // \033[ + code + m + \0
         *sequence = malloc(len);
         if (*sequence) snprintf(*sequence, len, "\033[%sm", code);
-        free(raw);
         return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
     }
 
@@ -330,12 +327,29 @@ int ansi_color(const char *filename, const char *name, char **sequence) {
         size_t len = strlen(raw) + 5;
         *sequence = malloc(len);
         if (*sequence) snprintf(*sequence, len, "\033[%sm", raw);
-        free(raw);
         return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
     }
 
     // Treated as raw escape
     *sequence = unquote_escapes(raw);
-    free(raw);
     return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
+}
+
+/**
+ * Finds a logical color name in a colorscheme file and returns its color sequence.
+ * 
+ * @param filename  Path to the colorscheme file
+ * @param name      Logical color name (e.g., "header")
+ * @param converter Function to convert raw sequence to terminal-specific sequence
+ * @param sequence  Output pointer for the allocated sequence string
+ * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND if file not found, TERMCOLORS_UNKNOWN_COLOR if color not defined.
+ */
+int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence) {
+    char *raw = NULL;
+    int res = color_sequence(filename, name, &raw);
+    if (res != TERMCOLORS_SUCCESS) return res;
+
+    res = converter(raw, sequence);
+    free(raw);
+    return res;
 }

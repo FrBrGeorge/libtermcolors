@@ -59,20 +59,33 @@ char *unquote_escapes(const char *sequence);
 int color_sequence(const char *filename, const char *name, char **sequence);
 
 /**
- * Finds a logical color name in a colorscheme file and returns its ANSI escape sequence.
+ * Finds a logical color name in a colorscheme file and returns its color sequence.
  * 
- * This function works like color_sequence(), but also:
- * - If a raw escape is detected (starts with \), calls unquote_escapes().
- * - If an ANSI color sequence is detected (numbers and semicolons), encloses it with \033[ and m.
- * - If a color name is detected, replaces it with an appropriate escape sequence.
+ * This function finds the raw sequence for a logical color name and converts it
+ * using the provided converter function.
  * 
- * @param filename Path to the colorscheme file
- * @param name     Logical color name (e.g., "header")
- * @param sequence Output pointer for the allocated sequence string
+ * @param filename  Path to the colorscheme file
+ * @param name      Logical color name (e.g., "header")
+ * @param converter Function to convert raw sequence to terminal-specific sequence
+ * @param sequence  Output pointer for the allocated sequence string
  * @return TERMCOLORS_SUCCESS on success,
  *         TERMCOLORS_NOT_FOUND if the file is not found,
  *         TERMCOLORS_UNKNOWN_COLOR if the color name is not defined.
  */
-int ansi_color(const char *filename, const char *name, char **sequence);
+int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence);
+
+/**
+ * Backward compatibility macro for ANSI terminals.
+ */
+#define ansi_color(f, n, s) get_color(f, n, ansi_sequence, s)
+
+/**
+ * Converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
+ * 
+ * @param raw      Raw color string
+ * @param sequence Output pointer for the allocated sequence string
+ * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND on error.
+ */
+int ansi_sequence(const char *raw, char **sequence);
 
 #endif /* TERMCOLORS_H */

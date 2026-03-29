@@ -1,6 +1,6 @@
 .TH libtermcolors 3 "2026-03-28" "libtermcolors 1.0.0" "Library Functions Manual"
 .SH NAME
-colorscheme, color_sequence, unquote_escapes, ansi_color \- terminal colorization scheme handling
+colorscheme, color_sequence, unquote_escapes, get_color, ansi_sequence \- terminal colorization scheme handling
 .SH SYNOPSIS
 .nf
 .B #include <termcolors.h>
@@ -11,7 +11,11 @@ colorscheme, color_sequence, unquote_escapes, ansi_color \- terminal colorizatio
 .sp
 .BI "char *unquote_escapes(const char *" sequence ");"
 .sp
+.BI "int get_color(const char *" filename ", const char *" name ", int (*" converter ")(const char *, char **), char **" sequence ");"
+.sp
 .BI "int ansi_color(const char *" filename ", const char *" name ", char **" sequence ");"
+.sp
+.BI "int ansi_sequence(const char *" raw ", char **" sequence ");"
 .fi
 .SH DESCRIPTION
 The
@@ -28,20 +32,25 @@ The
 .BR unquote_escapes ()
 function translates escape sequences in a string according to
 .BR terminal-colors.d (5).
-Supported sequences: \a, \b, \e, \f, \n, \r, \t, \v, \\, \_.
+Supported sequences: \\a, \\b, \\e, \\f, \\n, \\r, \\t, \\v, \\\\, \\_.
+.PP
+The
+.BR get_color ()
+function finds a logical color name in a colorscheme file and returns its color sequence using the provided
+.I converter
+function.
 .PP
 The
 .BR ansi_color ()
-function works like
-.BR color_sequence (),
-but also:
-.IP \(bu
-If a raw escape is detected (starts with \), calls
-.BR unquote_escapes ().
-.IP \(bu
-If an ANSI color sequence is detected (numbers and semicolons), encloses it with \033[ and m.
-.IP \(bu
-If a color name is detected, replaces it with an appropriate escape sequence.
+macro is a backward compatibility wrapper for
+.BR get_color ()
+that uses
+.BR ansi_sequence ()
+as the converter.
+.PP
+The
+.BR ansi_sequence ()
+function converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
 .PP
 Supported color names: black, blue, brown, cyan, darkgray, gray, green, 
 lightblue, lightcyan, lightgray, lightgreen, lightmagenta, lightred, 
@@ -52,8 +61,9 @@ Supported attribute names: blink, bold, halfbright, reset, reverse.
 On success,
 .BR colorscheme (),
 .BR color_sequence (),
+.BR get_color (),
 and
-.BR ansi_color ()
+.BR ansi_sequence ()
 return
 .B TERMCOLORS_SUCCESS
 (0).

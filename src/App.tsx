@@ -308,6 +308,56 @@ static int is_ansi_sequence(const char *s) {
 }
 
 /**
+ * Finds a logical color name in a colorscheme file and returns its color sequence.
+ * 
+ * @param filename  Path to the colorscheme file
+ * @param name      Logical color name (e.g., "header")
+ * @param converter Function to convert raw sequence to terminal-specific sequence
+ * @param sequence  Output pointer for the allocated sequence string
+ * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND if file not found, TERMCOLORS_UNKNOWN_COLOR if color not defined.
+ */
+int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence) {
+    char *raw = NULL;
+    int res = color_sequence(filename, name, &raw);
+    if (res != TERMCOLORS_SUCCESS) return res;
+
+    res = converter(raw, sequence);
+    free(raw);
+    return res;
+}
+
+/**
+ * Converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
+ * 
+ * @param raw      Raw color string
+ * @param sequence Output pointer for the allocated sequence string
+ * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND on error.
+ */
+int ansi_sequence(const char *raw, char **sequence) {
+    if (!raw || !sequence) return TERMCOLORS_NOT_FOUND;
+    *sequence = NULL;
+
+    const char *code = get_color_code(raw);
+    if (code) {
+        size_t len = strlen(code) + 5; // \\033[ + code + m + \\0
+        *sequence = malloc(len);
+        if (*sequence) snprintf(*sequence, len, "\\033[%sm", code);
+        return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
+    }
+
+    if (is_ansi_sequence(raw)) {
+        size_t len = strlen(raw) + 5;
+        *sequence = malloc(len);
+        if (*sequence) snprintf(*sequence, len, "\\033[%sm", raw);
+        return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
+    }
+
+    // Treated as raw escape
+    *sequence = unquote_escapes(raw);
+    return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
+}
+
+/**
  * Finds a logical color name in a colorscheme file and returns its ANSI escape sequence.
  * 
  * @param filename Path to the colorscheme file
@@ -320,27 +370,9 @@ int ansi_color(const char *filename, const char *name, char **sequence) {
     int res = color_sequence(filename, name, &raw);
     if (res != TERMCOLORS_SUCCESS) return res;
 
-    const char *code = get_color_code(raw);
-    if (code) {
-        size_t len = strlen(code) + 5; // \\033[ + code + m + \\0
-        *sequence = malloc(len);
-        if (*sequence) snprintf(*sequence, len, "\\033[%sm", code);
-        free(raw);
-        return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
-    }
-
-    if (is_ansi_sequence(raw)) {
-        size_t len = strlen(raw) + 5;
-        *sequence = malloc(len);
-        if (*sequence) snprintf(*sequence, len, "\\033[%sm", raw);
-        free(raw);
-        return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
-    }
-
-    // Treated as raw escape
-    *sequence = unquote_escapes(raw);
+    res = ansi_sequence(raw, sequence);
     free(raw);
-    return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
+    return res;
 }
 `;
 
@@ -405,21 +437,34 @@ char *unquote_escapes(const char *sequence);
 int color_sequence(const char *filename, const char *name, char **sequence);
 
 /**
- * Finds a logical color name in a colorscheme file and returns its ANSI escape sequence.
+ * Finds a logical color name in a colorscheme file and returns its color sequence.
  * 
- * This function works like color_sequence(), but also:
- * - If a raw escape is detected (starts with \\), calls unquote_escapes().
- * - If an ANSI color sequence is detected (numbers and semicolons), encloses it with \\033[ and m.
- * - If a color name is detected, replaces it with an appropriate escape sequence.
+ * This function finds the raw sequence for a logical color name and converts it
+ * using the provided converter function.
  * 
- * @param filename Path to the colorscheme file
- * @param name     Logical color name (e.g., "header")
- * @param sequence Output pointer for the allocated sequence string
+ * @param filename  Path to the colorscheme file
+ * @param name      Logical color name (e.g., "header")
+ * @param converter Function to convert raw sequence to terminal-specific sequence
+ * @param sequence  Output pointer for the allocated sequence string
  * @return TERMCOLORS_SUCCESS on success,
  *         TERMCOLORS_NOT_FOUND if the file is not found,
  *         TERMCOLORS_UNKNOWN_COLOR if the color name is not defined.
  */
-int ansi_color(const char *filename, const char *name, char **sequence);
+int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence);
+
+/**
+ * Backward compatibility macro for ANSI terminals.
+ */
+#define ansi_color(f, n, s) get_color(f, n, ansi_sequence, s)
+
+/**
+ * Converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
+ * 
+ * @param raw      Raw color string
+ * @param sequence Output pointer for the allocated sequence string
+ * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND on error.
+ */
+int ansi_sequence(const char *raw, char **sequence);
 
 #endif /* TERMCOLORS_H */`;
 
@@ -479,12 +524,22 @@ EXTRA_DIST = $(man3_MANS)`;
 
 const MAN_PAGE = `.TH libtermcolors 3 "2026-03-28" "libtermcolors 1.0.0" "Library Functions Manual"
 .SH NAME
-colorscheme \- detect terminal colorization scheme file
+colorscheme, color_sequence, unquote_escapes, get_color, ansi_sequence \\- terminal colorization scheme handling
 .SH SYNOPSIS
 .nf
 .B #include <termcolors.h>
 .sp
 .BI "int colorscheme(char *" name ", char *" term ", char **" filename ");"
+.sp
+.BI "int color_sequence(const char *" filename ", const char *" name ", char **" sequence ");"
+.sp
+.BI "char *unquote_escapes(const char *" sequence ");"
+.sp
+.BI "int get_color(const char *" filename ", const char *" name ", int (*" converter ")(const char *, char **), char **" sequence ");"
+.sp
+.BI "int ansi_color(const char *" filename ", const char *" name ", char **" sequence ");"
+.sp
+.BI "int ansi_sequence(const char *" raw ", char **" sequence ");"
 .fi
 .SH DESCRIPTION
 The
@@ -492,10 +547,140 @@ The
 function detects which file must be used as a colorization scheme according to the
 .BR terminal-colors.d (5)
 specification.
-... (truncated for display) ...`;
+.PP
+The
+.BR color_sequence ()
+function finds a logical color name in a colorscheme file and returns its raw sequence.
+.PP
+The
+.BR unquote_escapes ()
+function translates escape sequences in a string according to
+.BR terminal-colors.d (5).
+Supported sequences: \\\\a, \\\\b, \\\\e, \\\\f, \\\\n, \\\\r, \\\\t, \\\\v, \\\\\\\\, \\\\_.
+.PP
+The
+.BR get_color ()
+function finds a logical color name in a colorscheme file and returns its color sequence using the provided
+.I converter
+function.
+.PP
+The
+.BR ansi_color ()
+macro is a backward compatibility wrapper for
+.BR get_color ()
+that uses
+.BR ansi_sequence ()
+as the converter.
+.PP
+The
+.BR ansi_sequence ()
+function converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
+.PP
+Supported color names: black, blue, brown, cyan, darkgray, gray, green, 
+lightblue, lightcyan, lightgray, lightgreen, lightmagenta, lightred, 
+magenta, red, white, yellow.
+.PP
+Supported attribute names: blink, bold, halfbright, reset, reverse.
+.SH RETURN VALUE
+On success,
+.BR colorscheme (),
+.BR color_sequence (),
+.BR get_color (),
+and
+.BR ansi_sequence ()
+return
+.B TERMCOLORS_SUCCESS
+(0).
+.PP
+.BR unquote_escapes ()
+returns an allocated string on success, or NULL on error.
+.SH ENVIRONMENT
+.TP
+.B NO_COLOR
+If set to any value, colorization is disabled. This variable has the highest priority.
+.SH FILES
+The function searches for configuration files in the following directories (in order of priority):
+.IP 1.
+.I $XDG_CONFIG_HOME/terminal-colors.d
+(or
+.I $HOME/.config/terminal-colors.d
+if
+.I $XDG_CONFIG_HOME
+is not set)
+.IP 2.
+.I SYSCONFDIR/terminal-colors.d
+(where
+.I SYSCONFDIR
+is determined at build time, typically
+.IR /etc ).
+.PP
+Within each directory, the following files are searched (first match wins):
+.IP 1.
+.I name@term.enable
+.IP 2.
+.I name@term.disable
+.IP 3.
+.I name@term.scheme
+.IP 4.
+.I name.enable
+.IP 5.
+.I name.disable
+.IP 6.
+.I name.scheme
+.IP 7.
+.I @term.enable
+.IP 8.
+.I @term.disable
+.IP 9.
+.I @term.scheme
+.IP 10.
+.I disable
+.SH SEE ALSO
+.BR terminal-colors.d (5)`;
+
+const README_MD = `# libtermcolors
+
+A library for terminal colorization scheme handling according to the \`terminal-colors.d(5)\` specification.
+
+## Usage Example
+
+\`\`\`c
+#include <termcolors.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    char *filename = NULL;
+    int res = colorscheme("mytool", "xterm", &filename);
+    
+    if (res == TERMCOLORS_SUCCESS && filename) {
+        char *seq = NULL;
+        char *reset = NULL;
+        ansi_sequence("reset", &reset);
+        if (ansi_color(filename, "header", &seq) == TERMCOLORS_SUCCESS) {
+            printf("%sThis is a header%s\\n", seq, reset);
+            free(seq);
+        }
+        free(reset);
+        free(filename);
+    }
+    
+    return 0;
+}
+\`\`\`
+
+## Build and Install
+
+\`\`\`bash
+autoreconf -fi
+./configure
+make
+sudo make install
+\`\`\`
+`;
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'code' | 'build' | 'man'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'build' | 'man' | 'readme'>('readme');
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#e0e0e0] font-sans selection:bg-[#F27D26] selection:text-white">
@@ -511,6 +696,15 @@ export default function App() {
           </div>
         </div>
         <nav className="flex gap-1 bg-[#222] p-1 rounded-md">
+          <button
+            onClick={() => setActiveTab('readme')}
+            className={`px-4 py-1.5 rounded text-sm font-medium transition-all ${
+              activeTab === 'readme' ? 'bg-[#F27D26] text-white' : 'text-[#888] hover:text-white'
+            }`}
+          >
+            <BookOpen className="inline-block w-4 h-4 mr-2" />
+            README
+          </button>
           <button
             onClick={() => setActiveTab('code')}
             className={`px-4 py-1.5 rounded text-sm font-medium transition-all ${
@@ -542,6 +736,59 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto p-8">
+        {activeTab === 'readme' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#151619] rounded-xl border border-[#333] overflow-hidden shadow-2xl p-8"
+          >
+            <div className="prose prose-invert max-w-none">
+              <div className="flex items-center gap-2 mb-6 text-[#F27D26]">
+                <BookOpen className="w-5 h-5" />
+                <span className="text-xs font-mono uppercase tracking-widest">README.md</span>
+              </div>
+              <div className="text-[#d1d1d1] leading-relaxed">
+                <h1 className="text-3xl font-bold mb-4 text-white border-b border-[#333] pb-2">libtermcolors</h1>
+                <p className="mb-6">A library for terminal colorization scheme handling according to the <code className="bg-[#222] px-1 rounded text-[#F27D26]">terminal-colors.d(5)</code> specification.</p>
+                
+                <h2 className="text-xl font-bold mb-4 text-white">Usage Example</h2>
+                <pre className="bg-[#111] p-4 rounded mb-6 font-mono text-sm border border-[#333]">
+                  {`#include <termcolors.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    char *filename = NULL;
+    int res = colorscheme("mytool", "xterm", &filename);
+    
+    if (res == TERMCOLORS_SUCCESS && filename) {
+        char *seq = NULL;
+        char *reset = NULL;
+        ansi_sequence("reset", &reset);
+        if (ansi_color(filename, "header", &seq) == TERMCOLORS_SUCCESS) {
+            printf("%sThis is a header%s\\n", seq, reset);
+            free(seq);
+        }
+        free(reset);
+        free(filename);
+    }
+    
+    return 0;
+}`}
+                </pre>
+
+                <h2 className="text-xl font-bold mb-4 text-white">Build and Install</h2>
+                <pre className="bg-[#111] p-4 rounded mb-6 font-mono text-sm border border-[#333]">
+                  {`autoreconf -fi
+./configure
+make
+sudo make install`}
+                </pre>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {activeTab === 'code' && (
           <div className="grid grid-cols-1 gap-8">
             <motion.div
