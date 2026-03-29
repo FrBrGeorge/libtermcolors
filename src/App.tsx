@@ -706,6 +706,10 @@ Within each directory, the following files are searched (first match wins):
 
 const README_MD = `# libtermcolors
 
+[![C/C++ CI](https://github.com/FrBrGeorge/libtermcolors/actions/workflows/tests.yml/badge.svg)](https://github.com/FrBrGeorge/libtermcolors/actions/workflows/tests.yml)
+[![Latest Release](https://img.shields.io/github/v/release/FrBrGeorge/libtermcolors)](https://github.com/FrBrGeorge/libtermcolors/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A library for terminal colorization scheme handling according to the \`terminal-colors.d(5)\` specification.
 
 ## Usage Example
