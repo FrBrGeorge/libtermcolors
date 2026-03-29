@@ -9,6 +9,24 @@ const C_CODE = `#include "termcolors.h"
 #include <unistd.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <ctype.h>
+#include <stdarg.h>
+
+static void debug_print(const char *fmt, ...) {
+    static int debug = -1;
+    if (debug == -1) {
+        char *env = getenv("TERMINAL_COLORS_DEBUG");
+        debug = (env && strcmp(env, "all") == 0) ? 1 : 0;
+    }
+    if (debug) {
+        va_list args;
+        va_start(args, fmt);
+        fprintf(stderr, "libtermcolors: ");
+        vfprintf(stderr, fmt, args);
+        fprintf(stderr, "\\n");
+        va_end(args);
+    }
+}
 
 /**
  * Helper to join directory and filename.
@@ -40,7 +58,10 @@ int colorscheme(char *name, char *term, char **filename) {
     *filename = NULL;
 
     // 1. Check environment variables (highest priority)
-    if (getenv("NO_COLOR")) return TERMCOLORS_DISABLED;
+    if (getenv("NO_COLOR")) {
+        debug_print("NO_COLOR environment variable found, disabling colorization");
+        return TERMCOLORS_DISABLED;
+    }
 
     // 2. Prepare directories to search in priority order
     char *dirs[2] = { NULL, NULL };
@@ -52,12 +73,14 @@ int colorscheme(char *name, char *term, char **filename) {
         char buf[PATH_MAX];
         snprintf(buf, sizeof(buf), "%s/terminal-colors.d", xdg_config);
         dirs[dir_count++] = strdup(buf);
+        debug_print("Adding XDG_CONFIG_HOME directory: %s", buf);
     } else {
         char *home = getenv("HOME");
         if (home) {
             char buf[PATH_MAX];
             snprintf(buf, sizeof(buf), "%s/.config/terminal-colors.d", home);
             dirs[dir_count++] = strdup(buf);
+            debug_print("Adding HOME directory: %s", buf);
         }
     }
 
@@ -69,6 +92,7 @@ int colorscheme(char *name, char *term, char **filename) {
         char buf[PATH_MAX];
         snprintf(buf, sizeof(buf), "%s/terminal-colors.d", SYSCONFDIR);
         dirs[dir_count++] = strdup(buf);
+        debug_print("Adding system-wide directory: %s", buf);
     }
 
     // 3. Search directories
@@ -80,7 +104,12 @@ int colorscheme(char *name, char *term, char **filename) {
         if (result != TERMCOLORS_NOT_FOUND) break;
 
         // Skip if directory doesn't exist or isn't a directory
-        if (stat(dir, &st) != 0 || !S_ISDIR(st.st_mode)) continue;
+        if (stat(dir, &st) != 0 || !S_ISDIR(st.st_mode)) {
+            debug_print("Directory %s not found or not a directory", dir);
+            continue;
+        }
+
+        debug_print("Searching in directory: %s", dir);
 
         enum { M_SCHEME, M_DISABLE, M_ENABLE };
         struct {
@@ -129,14 +158,19 @@ int colorscheme(char *name, char *term, char **filename) {
 
             char *p = join_path(dir, candidate);
             if (p) {
+                debug_print("Checking candidate file: %s", p);
                 if (access(p, F_OK) == 0) {
+                    debug_print("Found candidate file: %s", p);
                     if (patterns[j].type == M_DISABLE) {
+                        debug_print("Colorization disabled by %s", p);
                         free(p);
                         result = TERMCOLORS_DISABLED;
                     } else if (patterns[j].type == M_ENABLE) {
+                        debug_print("Colorization explicitly enabled by %s", p);
                         free(p);
                         result = TERMCOLORS_SUCCESS;
                     } else {
+                        debug_print("Using colorscheme from %s", p);
                         *filename = p;
                         result = TERMCOLORS_SUCCESS;
                     }
@@ -318,8 +352,12 @@ static int is_ansi_sequence(const char *s) {
  */
 int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence) {
     char *raw = NULL;
+    debug_print("Requesting color '%s' from colorscheme %s", name, filename);
     int res = color_sequence(filename, name, &raw);
-    if (res != TERMCOLORS_SUCCESS) return res;
+    if (res != TERMCOLORS_SUCCESS) {
+        debug_print("Color '%s' not found in colorscheme %s", name, filename);
+        return res;
+    }
 
     res = converter(raw, sequence);
     free(raw);
@@ -337,11 +375,14 @@ int ansi_sequence(const char *raw, char **sequence) {
     if (!raw || !sequence) return TERMCOLORS_NOT_FOUND;
     *sequence = NULL;
 
+    debug_print("Converting raw sequence: %s", raw);
+
     const char *code = get_color_code(raw);
     if (code) {
         size_t len = strlen(code) + 5; // \\033[ + code + m + \\0
         *sequence = malloc(len);
         if (*sequence) snprintf(*sequence, len, "\\033[%sm", code);
+        debug_print("Converted to ANSI sequence via color name: %s", *sequence);
         return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
     }
 
@@ -349,11 +390,13 @@ int ansi_sequence(const char *raw, char **sequence) {
         size_t len = strlen(raw) + 5;
         *sequence = malloc(len);
         if (*sequence) snprintf(*sequence, len, "\\033[%sm", raw);
+        debug_print("Converted to ANSI sequence via raw code: %s", *sequence);
         return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
     }
 
     // Treated as raw escape
     *sequence = unquote_escapes(raw);
+    debug_print("Converted to raw escape sequence: %s", *sequence);
     return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
 }
 
@@ -502,12 +545,16 @@ AC_OUTPUT`;
 const MAKEFILE_AM = `ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src tests`;
 
-const TESTS_MAKEFILE_AM = `check_PROGRAMS = test_termcolors
+const TESTS_MAKEFILE_AM = `check_PROGRAMS = test_termcolors example
 test_termcolors_SOURCES = test_termcolors.c
 test_termcolors_LDADD = $(top_builddir)/src/libtermcolors.la
 test_termcolors_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
 
-TESTS = test_termcolors`;
+example_SOURCES = example.c
+example_LDADD = $(top_builddir)/src/libtermcolors.la
+example_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
+
+TESTS = test_termcolors example`;
 
 const SRC_MAKEFILE_AM = `lib_LTLIBRARIES = libtermcolors.la
 libtermcolors_la_SOURCES = termcolors.c

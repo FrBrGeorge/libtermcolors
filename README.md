@@ -4,6 +4,9 @@ A library for terminal colorization scheme handling according to the `terminal-c
 
 ## Usage Example
 
+See `tests/example.c` for a complete, compilable example with error handling.
+
+Short snippet:
 ```c
 #include <termcolors.h>
 #include <stdio.h>
