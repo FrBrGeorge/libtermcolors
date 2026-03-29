@@ -1,6 +1,10 @@
 #ifndef TERMCOLORS_H
 #define TERMCOLORS_H
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /**
  * Error codes for colorscheme function.
  */

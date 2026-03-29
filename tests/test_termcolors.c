@@ -317,7 +317,7 @@ static void test_ansi_color() {
     // Test 6: White color
     res = ansi_color(scheme_file, "white_color", &seq);
     assert(res == TERMCOLORS_SUCCESS);
-    assert(strcmp(seq, "\033[37m") == 0);
+    assert(strcmp(seq, "\033[1;37m") == 0);
     free(seq);
 
     // Test 7: Raw escape

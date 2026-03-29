@@ -275,8 +275,8 @@ static const char *get_color_code(const char *name) {
     if (strcmp(name, "magenta") == 0) return "35";
     if (strcmp(name, "cyan") == 0) return "36";
     if (strcmp(name, "gray") == 0) return "37";
-    if (strcmp(name, "lightgray") == 0) return "37";
-    if (strcmp(name, "white") == 0) return "37";
+    if (strcmp(name, "lightgray") == 0) return "1;37";
+    if (strcmp(name, "white") == 0) return "1;37";
 
     // Bright colors
     if (strcmp(name, "darkgray") == 0) return "1;30";
@@ -346,6 +346,10 @@ int ansi_color(const char *filename, const char *name, char **sequence) {
 
 const H_CODE = `#ifndef TERMCOLORS_H
 #define TERMCOLORS_H
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 /**
  * Error codes for colorscheme function.
@@ -444,17 +448,26 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([getenv strdup strtok_r snprintf stat access])
 
 AC_CONFIG_FILES([Makefile
-                 libtermcolors.pc])
+                 src/Makefile
+                 src/libtermcolors.pc])
 AC_OUTPUT`;
 
 const MAKEFILE_AM = `ACLOCAL_AMFLAGS = -I m4
+SUBDIRS = src
 
-lib_LTLIBRARIES = libtermcolors.la
-libtermcolors_la_SOURCES = src/termcolors.c
-libtermcolors_la_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"'
+check_PROGRAMS = test_termcolors
+test_termcolors_SOURCES = tests/test_termcolors.c
+test_termcolors_LDADD = src/libtermcolors.la
+test_termcolors_CPPFLAGS = -I$(srcdir)/src -I$(top_builddir)
+
+TESTS = test_termcolors`;
+
+const SRC_MAKEFILE_AM = `lib_LTLIBRARIES = libtermcolors.la
+libtermcolors_la_SOURCES = termcolors.c
+libtermcolors_la_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -I$(top_builddir)
 libtermcolors_la_LDFLAGS = -version-info 1:0:0
 
-include_HEADERS = src/termcolors.h
+include_HEADERS = termcolors.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libtermcolors.pc
@@ -596,6 +609,21 @@ export default function App() {
               </div>
               <pre className="p-6 overflow-x-auto text-sm font-mono leading-relaxed text-[#d1d1d1]">
                 <code>{MAKEFILE_AM}</code>
+              </pre>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-[#151619] rounded-xl border border-[#333] overflow-hidden shadow-2xl"
+            >
+              <div className="bg-[#1c1d21] px-4 py-2 border-b border-[#333] flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#F27D26]" />
+                <span className="text-xs font-mono text-[#666]">src/Makefile.am</span>
+              </div>
+              <pre className="p-6 overflow-x-auto text-sm font-mono leading-relaxed text-[#d1d1d1]">
+                <code>{SRC_MAKEFILE_AM}</code>
               </pre>
             </motion.div>
           </div>

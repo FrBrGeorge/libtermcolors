@@ -23,5 +23,6 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([getenv strdup strtok_r snprintf stat access])
 
 AC_CONFIG_FILES([Makefile
-                 libtermcolors.pc])
+                 src/Makefile
+                 src/libtermcolors.pc])
 AC_OUTPUT
