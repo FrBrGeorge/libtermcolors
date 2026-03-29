@@ -275,8 +275,6 @@ static const char *get_color_code(const char *name) {
     if (strcmp(name, "magenta") == 0) return "35";
     if (strcmp(name, "cyan") == 0) return "36";
     if (strcmp(name, "gray") == 0) return "37";
-    if (strcmp(name, "lightgray") == 0) return "1;37";
-    if (strcmp(name, "white") == 0) return "1;37";
 
     // Bright colors
     if (strcmp(name, "darkgray") == 0) return "1;30";
@@ -286,6 +284,8 @@ static const char *get_color_code(const char *name) {
     if (strcmp(name, "lightblue") == 0) return "1;34";
     if (strcmp(name, "lightmagenta") == 0) return "1;35";
     if (strcmp(name, "lightcyan") == 0) return "1;36";
+    if (strcmp(name, "lightgray") == 0) return "1;37";
+    if (strcmp(name, "white") == 0) return "1;37";
     
     return NULL;
 }
@@ -434,6 +434,7 @@ LT_INIT
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_AR
 
 # Checks for libraries.
 
@@ -449,16 +450,17 @@ AC_CHECK_FUNCS([getenv strdup strtok_r snprintf stat access])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 tests/Makefile
                  src/libtermcolors.pc])
 AC_OUTPUT`;
 
 const MAKEFILE_AM = `ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = src
+SUBDIRS = src tests`;
 
-check_PROGRAMS = test_termcolors
-test_termcolors_SOURCES = tests/test_termcolors.c
-test_termcolors_LDADD = src/libtermcolors.la
-test_termcolors_CPPFLAGS = -I$(srcdir)/src -I$(top_builddir)
+const TESTS_MAKEFILE_AM = `check_PROGRAMS = test_termcolors
+test_termcolors_SOURCES = test_termcolors.c
+test_termcolors_LDADD = $(top_builddir)/src/libtermcolors.la
+test_termcolors_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
 
 TESTS = test_termcolors`;
 
@@ -624,6 +626,21 @@ export default function App() {
               </div>
               <pre className="p-6 overflow-x-auto text-sm font-mono leading-relaxed text-[#d1d1d1]">
                 <code>{SRC_MAKEFILE_AM}</code>
+              </pre>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-[#151619] rounded-xl border border-[#333] overflow-hidden shadow-2xl"
+            >
+              <div className="bg-[#1c1d21] px-4 py-2 border-b border-[#333] flex items-center gap-2">
+                <Settings className="w-4 h-4 text-[#F27D26]" />
+                <span className="text-xs font-mono text-[#666]">tests/Makefile.am</span>
+              </div>
+              <pre className="p-6 overflow-x-auto text-sm font-mono leading-relaxed text-[#d1d1d1]">
+                <code>{TESTS_MAKEFILE_AM}</code>
               </pre>
             </motion.div>
           </div>

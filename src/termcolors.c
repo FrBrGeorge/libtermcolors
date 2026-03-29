@@ -272,8 +272,6 @@ static const char *get_color_code(const char *name) {
     if (strcmp(name, "magenta") == 0) return "35";
     if (strcmp(name, "cyan") == 0) return "36";
     if (strcmp(name, "gray") == 0) return "37";
-    if (strcmp(name, "lightgray") == 0) return "1;37";
-    if (strcmp(name, "white") == 0) return "1;37";
 
     // Bright colors
     if (strcmp(name, "darkgray") == 0) return "1;30";
@@ -283,6 +281,8 @@ static const char *get_color_code(const char *name) {
     if (strcmp(name, "lightblue") == 0) return "1;34";
     if (strcmp(name, "lightmagenta") == 0) return "1;35";
     if (strcmp(name, "lightcyan") == 0) return "1;36";
+    if (strcmp(name, "lightgray") == 0) return "1;37";
+    if (strcmp(name, "white") == 0) return "1;37";
     
     return NULL;
 }

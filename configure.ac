@@ -9,6 +9,7 @@ LT_INIT
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_AR
 
 # Checks for libraries.
 
@@ -24,5 +25,6 @@ AC_CHECK_FUNCS([getenv strdup strtok_r snprintf stat access])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 tests/Makefile
                  src/libtermcolors.pc])
 AC_OUTPUT
