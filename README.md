@@ -45,17 +45,17 @@ int main() {
 
 ### Running the Example Manually
 
-The test suite creates a persistent colorscheme in `tests/config/terminal-colors.d/mytool.scheme`. You can run the example manually by pointing `XDG_CONFIG_HOME` to the `tests/config` directory:
+The test suite creates a persistent colorscheme in `tests/terminal-colors.d/mytool.scheme`. You can run the example manually by pointing `XDG_CONFIG_HOME` to the `tests` directory:
 
 ```bash
 cd tests
-XDG_CONFIG_HOME=$(pwd)/config ./example
+XDG_CONFIG_HOME=$(pwd) ./example
 ```
 
 You can also enable debug messages to see the discovery process:
 
 ```bash
-TERMINAL_COLORS_DEBUG=all XDG_CONFIG_HOME=$(pwd)/config ./example
+TERMINAL_COLORS_DEBUG=all XDG_CONFIG_HOME=$(pwd) ./example
 ```
 
 ## Build and Install

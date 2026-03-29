@@ -10,7 +10,7 @@ example_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
 TESTS = test_termcolors example
 
 # Create a persistent colorscheme for the example test
-CONFIG_DIR = $(abs_builddir)/config
+CONFIG_DIR = $(abs_builddir)
 SCHEME_DIR = $(CONFIG_DIR)/terminal-colors.d
 SCHEME_FILE = $(SCHEME_DIR)/mytool.scheme
 
@@ -26,4 +26,4 @@ check-local: $(SCHEME_FILE)
 TESTS_ENVIRONMENT = XDG_CONFIG_HOME=$(CONFIG_DIR)
 
 clean-local:
-	rm -rf $(CONFIG_DIR)
+	rm -rf $(SCHEME_DIR)

@@ -557,7 +557,7 @@ example_CPPFLAGS = -I$(top_srcdir)/src -I$(top_builddir)
 TESTS = test_termcolors example
 
 # Create a persistent colorscheme for the example test
-CONFIG_DIR = $(abs_builddir)/config
+CONFIG_DIR = $(abs_builddir)
 SCHEME_DIR = $(CONFIG_DIR)/terminal-colors.d
 SCHEME_FILE = $(SCHEME_DIR)/mytool.scheme
 
@@ -573,7 +573,7 @@ check-local: $(SCHEME_FILE)
 TESTS_ENVIRONMENT = XDG_CONFIG_HOME=$(CONFIG_DIR)
 
 clean-local:
-	rm -rf $(CONFIG_DIR)`;
+	rm -rf $(SCHEME_DIR)`;
 
 const SRC_MAKEFILE_AM = `lib_LTLIBRARIES = libtermcolors.la
 libtermcolors_la_SOURCES = termcolors.c
@@ -741,17 +741,17 @@ int main() {
 
 ### Running the Example Manually
 
-The test suite creates a persistent colorscheme in \`tests/config/terminal-colors.d/mytool.scheme\`. You can run the example manually by pointing \`XDG_CONFIG_HOME\` to the \`tests/config\` directory:
+The test suite creates a persistent colorscheme in \`tests/terminal-colors.d/mytool.scheme\`. You can run the example manually by pointing \`XDG_CONFIG_HOME\` to the \`tests\` directory:
 
 \`\`\`bash
 cd tests
-XDG_CONFIG_HOME=\$(pwd)/config ./example
+XDG_CONFIG_HOME=\$(pwd) ./example
 \`\`\`
 
 You can also enable debug messages to see the discovery process:
 
 \`\`\`bash
-TERMINAL_COLORS_DEBUG=all XDG_CONFIG_HOME=\$(pwd)/config ./example
+TERMINAL_COLORS_DEBUG=all XDG_CONFIG_HOME=\$(pwd) ./example
 \`\`\`
 
 ## Build and Install
