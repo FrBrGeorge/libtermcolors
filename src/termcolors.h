@@ -28,7 +28,7 @@
  *         TERMCOLORS_DISABLED if coloring is disabled, 
  *         TERMCOLORS_NOT_FOUND if no appropriate scheme is found.
  */
-int colorscheme(char *name, char *term, char **filename);
+int tc_colorscheme(char *name, char *term, char **filename);
 
 /**
  * Translates escape sequences in a string according to terminal-colors.d(5).
@@ -39,7 +39,7 @@ int colorscheme(char *name, char *term, char **filename);
  * @param sequence Source string
  * @return Allocated translated string, or NULL on error.
  */
-char *unquote_escapes(const char *sequence);
+char *tc_unquote_escapes(const char *sequence);
 
 /**
  * Finds a logical color name in a colorscheme file and returns its raw sequence.
@@ -56,7 +56,7 @@ char *unquote_escapes(const char *sequence);
  *         TERMCOLORS_NOT_FOUND if the file is not found,
  *         TERMCOLORS_UNKNOWN_COLOR if the color name is not defined.
  */
-int color_sequence(const char *filename, const char *name, char **sequence);
+int tc_color_sequence(const char *filename, const char *name, char **sequence);
 
 /**
  * Finds a logical color name in a colorscheme file and returns its color sequence.
@@ -72,12 +72,12 @@ int color_sequence(const char *filename, const char *name, char **sequence);
  *         TERMCOLORS_NOT_FOUND if the file is not found,
  *         TERMCOLORS_UNKNOWN_COLOR if the color name is not defined.
  */
-int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence);
+int tc_get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence);
 
 /**
  * Backward compatibility macro for ANSI terminals.
  */
-#define ansi_color(f, n, s) get_color(f, n, ansi_sequence, s)
+#define tc_ansi_color(f, n, s) tc_get_color(f, n, tc_ansi_sequence, s)
 
 /**
  * Converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
@@ -86,6 +86,6 @@ int get_color(const char *filename, const char *name, int (*converter)(const cha
  * @param sequence Output pointer for the allocated sequence string
  * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND on error.
  */
-int ansi_sequence(const char *raw, char **sequence);
+int tc_ansi_sequence(const char *raw, char **sequence);
 
 #endif /* TERMCOLORS_H */

@@ -7,7 +7,7 @@ int main() {
     char *filename = NULL;
     char *term = getenv("TERM");
     // We use "mytool" as utility name and the current TERM for this example.
-    int res = colorscheme("mytool", term, &filename);
+    int res = tc_colorscheme("mytool", term, &filename);
     
     if (res == TERMCOLORS_DISABLED) {
         printf("Coloring is disabled.\n");
@@ -21,7 +21,7 @@ int main() {
     }
 
     char *reset = NULL;
-    if (ansi_sequence("reset", &reset) != TERMCOLORS_SUCCESS) {
+    if (tc_ansi_sequence("reset", &reset) != TERMCOLORS_SUCCESS) {
         fprintf(stderr, "Failed to get reset sequence\n");
         free(filename);
         return 1;
@@ -33,7 +33,7 @@ int main() {
         char *seq = NULL;
         
         // Using get_color with ansi_sequence converter
-        if (get_color(filename, "header", ansi_sequence, &seq) == TERMCOLORS_SUCCESS) {
+        if (tc_get_color(filename, "header", tc_ansi_sequence, &seq) == TERMCOLORS_SUCCESS) {
             printf("%sThis is a header%s\n", seq, reset);
             free(seq);
         } else {
@@ -41,7 +41,7 @@ int main() {
         }
         
         // Or using the backward compatibility macro
-        if (ansi_color(filename, "error", &seq) == TERMCOLORS_SUCCESS) {
+        if (tc_ansi_color(filename, "error", &seq) == TERMCOLORS_SUCCESS) {
             printf("%sThis is an error%s\n", seq, reset);
             free(seq);
         } else {
@@ -52,7 +52,7 @@ int main() {
     } else {
         // If no colorscheme found, we could use hardcoded ANSI sequences as fallback
         char *red = NULL;
-        if (ansi_sequence("red", &red) == TERMCOLORS_SUCCESS) {
+        if (tc_ansi_sequence("red", &red) == TERMCOLORS_SUCCESS) {
             printf("%sThis is a fallback red error%s\n", red, reset);
             free(red);
         }

@@ -49,7 +49,7 @@ static char *join_path(const char *dir, const char *file) {
  * @param filename Output pointer for the allocated filename string
  * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_DISABLED if coloring is disabled, TERMCOLORS_NOT_FOUND if no scheme found.
  */
-int colorscheme(char *name, char *term, char **filename) {
+int tc_colorscheme(char *name, char *term, char **filename) {
     if (!name || !filename) return TERMCOLORS_NOT_FOUND;
     *filename = NULL;
 
@@ -190,7 +190,7 @@ int colorscheme(char *name, char *term, char **filename) {
  * @param sequence Source string
  * @return Allocated translated string, or NULL on error.
  */
-char *unquote_escapes(const char *sequence) {
+char *tc_unquote_escapes(const char *sequence) {
     if (!sequence) return NULL;
     size_t len = strlen(sequence);
     char *dest = malloc(len + 1);
@@ -232,7 +232,7 @@ char *unquote_escapes(const char *sequence) {
  * @param sequence Output pointer for the allocated sequence string
  * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND if file not found, TERMCOLORS_UNKNOWN_COLOR if color not defined.
  */
-int color_sequence(const char *filename, const char *name, char **sequence) {
+int tc_color_sequence(const char *filename, const char *name, char **sequence) {
     if (!filename || !name || !sequence) return TERMCOLORS_NOT_FOUND;
     *sequence = NULL;
 
@@ -350,7 +350,7 @@ static int is_ansi_sequence(const char *s) {
  * @param sequence Output pointer for the allocated sequence string
  * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND on error.
  */
-int ansi_sequence(const char *raw, char **sequence) {
+int tc_ansi_sequence(const char *raw, char **sequence) {
     if (!raw || !sequence) return TERMCOLORS_NOT_FOUND;
     *sequence = NULL;
 
@@ -374,7 +374,7 @@ int ansi_sequence(const char *raw, char **sequence) {
     }
 
     // Treated as raw escape
-    *sequence = unquote_escapes(raw);
+    *sequence = tc_unquote_escapes(raw);
     debug_print("Converted to raw escape sequence: %s", *sequence);
     return *sequence ? TERMCOLORS_SUCCESS : TERMCOLORS_NOT_FOUND;
 }
@@ -388,10 +388,10 @@ int ansi_sequence(const char *raw, char **sequence) {
  * @param sequence  Output pointer for the allocated sequence string
  * @return TERMCOLORS_SUCCESS on success, TERMCOLORS_NOT_FOUND if file not found, TERMCOLORS_UNKNOWN_COLOR if color not defined.
  */
-int get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence) {
+int tc_get_color(const char *filename, const char *name, int (*converter)(const char *, char **), char **sequence) {
     char *raw = NULL;
     debug_print("Requesting color '%s' from colorscheme %s", name, filename);
-    int res = color_sequence(filename, name, &raw);
+    int res = tc_color_sequence(filename, name, &raw);
     if (res != TERMCOLORS_SUCCESS) {
         debug_print("Color '%s' not found in colorscheme %s", name, filename);
         return res;

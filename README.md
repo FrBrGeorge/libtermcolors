@@ -19,22 +19,22 @@ Short snippet:
 int main() {
     char *filename = NULL;
     char *term = getenv("TERM");
-    int res = colorscheme("mytool", term, &filename);
+    int res = tc_colorscheme("mytool", term, &filename);
     
     if (res == TERMCOLORS_SUCCESS && filename) {
         char *seq = NULL;
         char *reset = NULL;
-        // Using ansi_sequence directly
-        ansi_sequence("reset", &reset);
+        // Using tc_ansi_sequence directly
+        tc_ansi_sequence("reset", &reset);
         
-        // Using get_color with ansi_sequence converter
-        if (get_color(filename, "header", ansi_sequence, &seq) == TERMCOLORS_SUCCESS) {
+        // Using tc_get_color with tc_ansi_sequence converter
+        if (tc_get_color(filename, "header", tc_ansi_sequence, &seq) == TERMCOLORS_SUCCESS) {
             printf("%sThis is a header%s\n", seq, reset);
             free(seq);
         }
         
         // Or using the backward compatibility macro
-        if (ansi_color(filename, "error", &seq) == TERMCOLORS_SUCCESS) {
+        if (tc_ansi_color(filename, "error", &seq) == TERMCOLORS_SUCCESS) {
             printf("%sThis is an error%s\n", seq, reset);
             free(seq);
         }

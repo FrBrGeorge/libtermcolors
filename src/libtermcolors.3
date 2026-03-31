@@ -1,55 +1,55 @@
 .TH libtermcolors 3 "2026-03-28" "libtermcolors 1.0.0" "Library Functions Manual"
 .SH NAME
-colorscheme, color_sequence, unquote_escapes, get_color, ansi_sequence \- terminal colorization scheme handling
+tc_colorscheme, tc_color_sequence, tc_unquote_escapes, tc_get_color, tc_ansi_sequence \- terminal colorization scheme handling
 .SH SYNOPSIS
 .nf
 .B #include <termcolors.h>
 .sp
-.BI "int colorscheme(char *" name ", char *" term ", char **" filename ");"
+.BI "int tc_colorscheme(char *" name ", char *" term ", char **" filename ");"
 .sp
-.BI "int color_sequence(const char *" filename ", const char *" name ", char **" sequence ");"
+.BI "int tc_color_sequence(const char *" filename ", const char *" name ", char **" sequence ");"
 .sp
-.BI "char *unquote_escapes(const char *" sequence ");"
+.BI "char *tc_unquote_escapes(const char *" sequence ");"
 .sp
-.BI "int get_color(const char *" filename ", const char *" name ", int (*" converter ")(const char *, char **), char **" sequence ");"
+.BI "int tc_get_color(const char *" filename ", const char *" name ", int (*" converter ")(const char *, char **), char **" sequence ");"
 .sp
-.BI "int ansi_color(const char *" filename ", const char *" name ", char **" sequence ");"
+.BI "int tc_ansi_color(const char *" filename ", const char *" name ", char **" sequence ");"
 .sp
-.BI "int ansi_sequence(const char *" raw ", char **" sequence ");"
+.BI "int tc_ansi_sequence(const char *" raw ", char **" sequence ");"
 .fi
 .SH DESCRIPTION
 The
-.BR colorscheme ()
+.BR tc_colorscheme ()
 function detects which file must be used as a colorization scheme according to the
 .BR terminal-colors.d (5)
 specification.
 .PP
 The
-.BR color_sequence ()
+.BR tc_color_sequence ()
 function finds a logical color name in a colorscheme file and returns its raw sequence.
 .PP
 The
-.BR unquote_escapes ()
+.BR tc_unquote_escapes ()
 function translates escape sequences in a string according to
 .BR terminal-colors.d (5).
 Supported sequences: \\a, \\b, \\e, \\f, \\n, \\r, \\t, \\v, \\\\, \\_.
 .PP
 The
-.BR get_color ()
+.BR tc_get_color ()
 function finds a logical color name in a colorscheme file and returns its color sequence using the provided
 .I converter
 function.
 .PP
 The
-.BR ansi_color ()
+.BR tc_ansi_color ()
 macro is a backward compatibility wrapper for
-.BR get_color ()
+.BR tc_get_color ()
 that uses
-.BR ansi_sequence ()
+.BR tc_ansi_sequence ()
 as the converter.
 .PP
 The
-.BR ansi_sequence ()
+.BR tc_ansi_sequence ()
 function converts a raw color string (color name, ANSI sequence, or raw escape) to an ANSI escape sequence.
 .PP
 Supported color names: black, blue, brown, cyan, darkgray, gray, green, 
@@ -59,16 +59,16 @@ magenta, red, white, yellow.
 Supported attribute names: blink, bold, halfbright, reset, reverse.
 .SH RETURN VALUE
 On success,
-.BR colorscheme (),
-.BR color_sequence (),
-.BR get_color (),
+.BR tc_colorscheme (),
+.BR tc_color_sequence (),
+.BR tc_get_color (),
 and
-.BR ansi_sequence ()
+.BR tc_ansi_sequence ()
 return
 .B TERMCOLORS_SUCCESS
 (0).
 .PP
-.BR unquote_escapes ()
+.BR tc_unquote_escapes ()
 returns an allocated string on success, or NULL on error.
 .SH ENVIRONMENT
 .TP

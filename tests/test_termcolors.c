@@ -51,7 +51,7 @@ static void test_terminal_application_specific() {
     printf("Testing terminal+application-specific scheme...\n");
     create_file("testapp@xterm.scheme");
     char *filename = NULL;
-    int res = colorscheme("testapp", "xterm", &filename);
+    int res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strstr(filename, "testapp@xterm.scheme") != NULL);
     free(filename);
@@ -61,7 +61,7 @@ static void test_application_specific() {
     printf("Testing application-specific scheme...\n");
     create_file("testapp.scheme");
     char *filename = NULL;
-    int res = colorscheme("testapp", "xterm", &filename);
+    int res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strstr(filename, "testapp.scheme") != NULL);
     free(filename);
@@ -71,7 +71,7 @@ static void test_terminal_specific() {
     printf("Testing terminal-specific scheme...\n");
     create_file("@xterm.scheme");
     char *filename = NULL;
-    int res = colorscheme("otherapp", "xterm", &filename);
+    int res = tc_colorscheme("otherapp", "xterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strstr(filename, "@xterm.scheme") != NULL);
     free(filename);
@@ -80,7 +80,7 @@ static void test_terminal_specific() {
 static void test_not_found() {
     printf("Testing not found scheme...\n");
     char *filename = NULL;
-    int res = colorscheme("missingapp", "missingterm", &filename);
+    int res = tc_colorscheme("missingapp", "missingterm", &filename);
     assert(res == TERMCOLORS_NOT_FOUND);
 }
 
@@ -88,7 +88,7 @@ static void test_application_disabling() {
     printf("Testing application-specific disabling...\n");
     create_file("testapp.disable");
     char *filename = NULL;
-    int res = colorscheme("testapp", "xterm", &filename);
+    int res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_DISABLED);
 }
 
@@ -96,7 +96,7 @@ static void test_terminal_disabling() {
     printf("Testing terminal-specific disabling...\n");
     create_file("@vt100.disable");
     char *filename = NULL;
-    int res = colorscheme("anyapp", "vt100", &filename);
+    int res = tc_colorscheme("anyapp", "vt100", &filename);
     assert(res == TERMCOLORS_DISABLED);
 }
 
@@ -104,7 +104,7 @@ static void test_global_disabling() {
     printf("Testing global disabling...\n");
     create_file("disable");
     char *filename = NULL;
-    int res = colorscheme("anyapp", "anyterm", &filename);
+    int res = tc_colorscheme("anyapp", "anyterm", &filename);
     assert(res == TERMCOLORS_DISABLED);
 }
 
@@ -112,7 +112,7 @@ static void test_no_color() {
     printf("Testing NO_COLOR environment variable...\n");
     setenv("NO_COLOR", "1", 1);
     char *filename = NULL;
-    int res = colorscheme("anyapp", "anyterm", &filename);
+    int res = tc_colorscheme("anyapp", "anyterm", &filename);
     assert(res == TERMCOLORS_DISABLED);
     unsetenv("NO_COLOR");
 }
@@ -124,21 +124,21 @@ static void test_priority_order() {
     create_file("testapp@xterm.disable");
     create_file("testapp@xterm.scheme");
     char *filename = NULL;
-    int res = colorscheme("testapp", "xterm", &filename);
+    int res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_DISABLED);
     
     // Remove disable, scheme should win
     char path[1024];
     snprintf(path, sizeof(path), "%s/terminal-colors.d/testapp@xterm.disable", tmp_dir);
     unlink(path);
-    res = colorscheme("testapp", "xterm", &filename);
+    res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strstr(filename, "testapp@xterm.scheme") != NULL);
     free(filename);
 
     // 2. name@term.scheme vs 3. name.disable
     create_file("testapp.disable");
-    res = colorscheme("testapp", "xterm", &filename);
+    res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strstr(filename, "testapp@xterm.scheme") != NULL);
     free(filename);
@@ -146,7 +146,7 @@ static void test_priority_order() {
     // Remove scheme, name.disable should win
     snprintf(path, sizeof(path), "%s/terminal-colors.d/testapp@xterm.scheme", tmp_dir);
     unlink(path);
-    res = colorscheme("testapp", "xterm", &filename);
+    res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_DISABLED);
 }
 
@@ -157,20 +157,20 @@ static void test_enable_files() {
     create_file("testapp@xterm.enable");
     create_file("testapp@xterm.disable");
     char *filename = NULL;
-    int res = colorscheme("testapp", "xterm", &filename);
+    int res = tc_colorscheme("testapp", "xterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(filename == NULL);
     
     // Test that name.enable overrides global disable
     create_file("testapp.enable");
     create_file("disable");
-    res = colorscheme("testapp", "otherterm", &filename);
+    res = tc_colorscheme("testapp", "otherterm", &filename);
     assert(res == TERMCOLORS_SUCCESS);
     assert(filename == NULL);
 }
 
 static void test_color_sequence() {
-    printf("Testing color_sequence (raw strings)...\n");
+    printf("Testing tc_color_sequence (raw strings)...\n");
 
     const char *scheme_file = "test.scheme";
     FILE *f = fopen(scheme_file, "w");
@@ -188,87 +188,87 @@ static void test_color_sequence() {
     int res;
 
     // Test 1: Successful read of ANSI color sequence (raw)
-    res = color_sequence(scheme_file, "header", &seq);
+    res = tc_color_sequence(scheme_file, "header", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(seq != NULL);
     assert(strcmp(seq, "1;34") == 0);
     free(seq);
 
     // Test 2: Successful read with trailing spaces (raw)
-    res = color_sequence(scheme_file, "warning", &seq);
+    res = tc_color_sequence(scheme_file, "warning", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(seq != NULL);
     assert(strcmp(seq, "1;33") == 0);
     free(seq);
 
     // Test 3: Color name support (raw)
-    res = color_sequence(scheme_file, "color_name", &seq);
+    res = tc_color_sequence(scheme_file, "color_name", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(seq != NULL);
     assert(strcmp(seq, "green") == 0);
     free(seq);
 
     // Test 4: Reset sequence (raw)
-    res = color_sequence(scheme_file, "reset", &seq);
+    res = tc_color_sequence(scheme_file, "reset", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(seq != NULL);
     assert(strcmp(seq, "0") == 0);
     free(seq);
 
     // Test 5: Complex ANSI sequence (raw)
-    res = color_sequence(scheme_file, "complex", &seq);
+    res = tc_color_sequence(scheme_file, "complex", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(seq != NULL);
     assert(strcmp(seq, "1;34;42") == 0);
     free(seq);
 
     // Test 6: Raw escape sequence with \e (raw)
-    res = color_sequence(scheme_file, "raw_esc", &seq);
+    res = tc_color_sequence(scheme_file, "raw_esc", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(seq != NULL);
     assert(strcmp(seq, "\\e[1;35m") == 0);
     free(seq);
 
     // Test 7: Unknown color name
-    res = color_sequence(scheme_file, "nonexistent", &seq);
+    res = tc_color_sequence(scheme_file, "nonexistent", &seq);
     assert(res == TERMCOLORS_UNKNOWN_COLOR);
     assert(seq == NULL);
 
     // Test 8: File not found
-    res = color_sequence("nonexistent.scheme", "header", &seq);
+    res = tc_color_sequence("nonexistent.scheme", "header", &seq);
     assert(res == TERMCOLORS_NOT_FOUND);
     assert(seq == NULL);
 
     unlink(scheme_file);
-    printf("color_sequence tests passed!\n");
+    printf("tc_color_sequence tests passed!\n");
 }
 
 static void test_unquote_escapes() {
-    printf("Testing unquote_escapes...\n");
+    printf("Testing tc_unquote_escapes...\n");
 
     char *t;
 
-    t = unquote_escapes("1;34");
+    t = tc_unquote_escapes("1;34");
     assert(strcmp(t, "1;34") == 0);
     free(t);
 
-    t = unquote_escapes("\\e[1;34m");
+    t = tc_unquote_escapes("\\e[1;34m");
     assert(strcmp(t, "\033[1;34m") == 0);
     free(t);
 
-    t = unquote_escapes("\\a\\b\\f\\n\\r\\t\\v\\\\\\_");
+    t = tc_unquote_escapes("\\a\\b\\f\\n\\r\\t\\v\\\\\\_");
     assert(strcmp(t, "\a\b\f\n\r\t\v\\ ") == 0);
     free(t);
 
-    t = unquote_escapes("\\x"); // Any other character preceded by a backslash is interpreted as that character
+    t = tc_unquote_escapes("\\x"); // Any other character preceded by a backslash is interpreted as that character
     assert(strcmp(t, "x") == 0);
     free(t);
 
-    printf("unquote_escapes tests passed!\n");
+    printf("tc_unquote_escapes tests passed!\n");
 }
 
 static void test_get_color() {
-    printf("Testing get_color and ansi_color macro...\n");
+    printf("Testing tc_get_color and tc_ansi_color macro...\n");
 
     const char *scheme_file = "test_ansi.scheme";
     FILE *f = fopen(scheme_file, "w");
@@ -285,73 +285,73 @@ static void test_get_color() {
     char *seq = NULL;
     int res;
 
-    // Test 1: get_color with ansi_sequence
-    res = get_color(scheme_file, "header", ansi_sequence, &seq);
+    // Test 1: tc_get_color with tc_ansi_sequence
+    res = tc_get_color(scheme_file, "header", tc_ansi_sequence, &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;34m") == 0);
     free(seq);
 
-    // Test 2: ansi_color macro
-    res = ansi_color(scheme_file, "error", &seq);
+    // Test 2: tc_ansi_color macro
+    res = tc_ansi_color(scheme_file, "error", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[31m") == 0);
     free(seq);
 
     // Test 3: Attribute name via macro
-    res = ansi_color(scheme_file, "bold_attr", &seq);
+    res = tc_ansi_color(scheme_file, "bold_attr", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1m") == 0);
     free(seq);
 
     // Test 4: Bright color name via macro
-    res = ansi_color(scheme_file, "bright_err", &seq);
+    res = tc_ansi_color(scheme_file, "bright_err", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;31m") == 0);
     free(seq);
 
     // Test 5: Brown color via macro
-    res = ansi_color(scheme_file, "brown_color", &seq);
+    res = tc_ansi_color(scheme_file, "brown_color", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[33m") == 0);
     free(seq);
 
     // Test 6: White color via macro
-    res = ansi_color(scheme_file, "white_color", &seq);
+    res = tc_ansi_color(scheme_file, "white_color", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;37m") == 0);
     free(seq);
 
     // Test 7: Raw escape via macro
-    res = ansi_color(scheme_file, "raw_esc", &seq);
+    res = tc_ansi_color(scheme_file, "raw_esc", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;35m") == 0);
     free(seq);
 
     // Test 8: Plain text treated as raw escape via macro
-    res = ansi_color(scheme_file, "plain_text", &seq);
+    res = tc_ansi_color(scheme_file, "plain_text", &seq);
     assert(res == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "some_text") == 0);
     free(seq);
 
     unlink(scheme_file);
-    printf("get_color and ansi_color tests passed!\n");
+    printf("tc_get_color and tc_ansi_color tests passed!\n");
 }
 
 static void test_ansi_sequence() {
     char *seq = NULL;
     
     // Test color name
-    assert(ansi_sequence("red", &seq) == TERMCOLORS_SUCCESS);
+    assert(tc_ansi_sequence("red", &seq) == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[31m") == 0);
     free(seq);
     
     // Test ANSI sequence
-    assert(ansi_sequence("1;32", &seq) == TERMCOLORS_SUCCESS);
+    assert(tc_ansi_sequence("1;32", &seq) == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[1;32m") == 0);
     free(seq);
     
     // Test raw escape
-    assert(ansi_sequence("\\e[34m", &seq) == TERMCOLORS_SUCCESS);
+    assert(tc_ansi_sequence("\\e[34m", &seq) == TERMCOLORS_SUCCESS);
     assert(strcmp(seq, "\033[34m") == 0);
     free(seq);
 }

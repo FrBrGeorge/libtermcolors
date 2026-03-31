@@ -1,5 +1,0 @@
-{
-  "name": "Terminal Colors Scheme Detector",
-  "description": "A C implementation of the terminal-colors.d(5) specification for detecting colorization schemes.",
-  "requestFramePermissions": []
-}
